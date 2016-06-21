@@ -1,6 +1,6 @@
 [package]
 name = "freefare-sys"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Daniel Griffin <danielseangriffin@gmail.com>"]
 description = "FFI bindings for the libfreefare library"
 documentation = "https://github.com/dsgriffin/freefare-sys"
@@ -12,4 +12,4 @@ license = "MIT"
 
 [dependencies]
 libc = "0.2.0"
-nfc-sys = "0.1.2"
+nfc-sys = "0.1.4"
