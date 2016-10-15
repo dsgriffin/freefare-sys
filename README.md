@@ -13,11 +13,11 @@ Make sure you've got `libnfc` installed (e.g. [Debian/Ubuntu](http://nfc-tools.o
 Also [`libfreefare`](http://nfc-tools.org/index.php?title=Libfreefare) of course (`brew install libfreefare` using Homebrew on Mac OS X).
 
 ### Cargo.toml
-
-    [dependencies]
-    libc = "0.2.0"
-    freefare-sys = "0.1.2"
-    
+```toml
+[dependencies]
+libc = "0.2.0"
+freefare-sys = "0.1.2"
+``` 
 ## Contributing
     
 I'm brand new to Rust so any help or constructive information would be really appreciated. Thanks in advance!    
