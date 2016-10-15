@@ -16,7 +16,7 @@ Also [`libfreefare`](http://nfc-tools.org/index.php?title=Libfreefare) of course
 
     [dependencies]
     libc = "0.2.0"
-    freefare-sys = "0.1.1"
+    freefare-sys = "0.1.2"
     
 ## Contributing
     
