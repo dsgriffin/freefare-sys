@@ -172,6 +172,18 @@ pub struct Struct_Unnamed7 {
 impl ::std::default::Default for Struct_Unnamed7 {
     fn default() -> Self { unsafe { ::std::mem::zeroed() } }
 }
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct ntag21x_key {
+    _unused: [u8; 0],
+}
+pub type NTAG21xKey = *mut ntag21x_key;
+
+pub const ntag_tag_subtype_NTAG_213: ntag_tag_subtype = 0;
+pub const ntag_tag_subtype_NTAG_215: ntag_tag_subtype = 1;
+pub const ntag_tag_subtype_NTAG_216: ntag_tag_subtype = 2;
+pub type ntag_tag_subtype = u32;
+
 #[link(name = "freefare", kind = "dylib")]
 extern "C" {
     pub static mifare_classic_nfcforum_public_key_a: MifareClassicKey;
@@ -680,4 +692,119 @@ extern "C" {
         field_length_size: *mut size_t,
         field_value_size: *mut size_t) -> size_t;
     pub fn tlv_append(a: *mut uint8_t, b: *mut uint8_t) -> *mut uint8_t;
+
+    pub fn ntag21x_taste(device: *mut nfc_device, target: nfc_target) -> bool;
+
+
+    pub fn ntag21x_tag_new(device: *mut nfc_device, target: nfc_target) -> FreefareTag;
+
+
+    pub fn ntag21x_tag_reuse(tag: FreefareTag) -> FreefareTag;
+
+
+    pub fn ntag21x_key_new(data: *const u8, pack: *const u8) -> NTAG21xKey;
+
+
+    pub fn ntag21x_key_free(key: NTAG21xKey);
+
+
+    pub fn ntag21x_tag_free(tag: FreefareTag);
+
+
+    pub fn ntag21x_connect(tag: FreefareTag) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_disconnect(tag: FreefareTag) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_get_info(tag: FreefareTag) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_get_subtype(tag: FreefareTag) -> ntag_tag_subtype;
+
+
+    pub fn ntag21x_get_last_page(tag: FreefareTag) -> u8;
+
+
+    pub fn ntag21x_read_signature(tag: FreefareTag, data: *mut u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_set_pwd(tag: FreefareTag, data: *mut u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_set_pack(tag: FreefareTag, data: *mut u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_set_key(tag: FreefareTag, key: NTAG21xKey) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_set_auth(tag: FreefareTag, byte: u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_get_auth(tag: FreefareTag, byte: *mut u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_access_enable(tag: FreefareTag, byte: u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_access_disable(tag: FreefareTag, byte: u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_get_access(tag: FreefareTag, byte: *mut u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_check_access(
+       tag: FreefareTag,
+        byte: u8,
+        result: *mut bool,
+    ) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_get_authentication_limit(
+       tag: FreefareTag,
+        byte: *mut u8,
+    ) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_set_authentication_limit(tag: FreefareTag, byte: u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_read(tag: FreefareTag, page: u8, data: *mut u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_read4(tag: FreefareTag, page: u8, data: *mut u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_fast_read(
+       tag: FreefareTag,
+        start_page: u8,
+        end_page: u8,
+        data: *mut u8,
+    ) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_fast_read4(tag: FreefareTag, page: u8, data: *mut u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_read_cnt(tag: FreefareTag, data: *mut u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_write(tag: FreefareTag, page: u8, data: *mut u8) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_compatibility_write(
+       tag: FreefareTag,
+        page: u8,
+        data: *mut u8,
+    ) -> ::std::os::raw::c_int;
+
+
+    pub fn ntag21x_authenticate(tag: FreefareTag, key: NTAG21xKey) -> ::std::os::raw::c_int;
+
+
+    pub fn is_ntag21x(tag: FreefareTag) -> bool;
+
+
+    pub fn ntag21x_is_auth_supported(device: *mut nfc_device, nai: nfc_iso14443a_info) -> bool;
+
 }
