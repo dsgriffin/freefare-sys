@@ -1,6 +1,6 @@
-[root]
+[[package]]
 name = "freefare-sys"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "nfc-sys 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -19,3 +19,6 @@ dependencies = [
  "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
+[metadata]
+"checksum libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)" = "044d1360593a78f5c8e5e710beccdc24ab71d1f01bc19a29bcacdba22e8475d8"
+"checksum nfc-sys 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "98e81aa40741063239b7df1b7c7a4b856b6bc0a0fd7dcb36211923a519fcdd8e"

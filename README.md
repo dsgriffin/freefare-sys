@@ -16,12 +16,12 @@ Also [`libfreefare`](http://nfc-tools.org/index.php?title=Libfreefare) of course
 ```toml
 [dependencies]
 libc = "0.2.0"
-freefare-sys = "0.1.2"
-``` 
+freefare-sys = "0.2.0"
+```
 ## Contributing
-    
-I'm brand new to Rust so any help or constructive information would be really appreciated. Thanks in advance!    
-    
+
+I'm brand new to Rust so any help or constructive information would be really appreciated. Thanks in advance!
+
 ## License
-    
+
 MIT
