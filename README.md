@@ -20,7 +20,7 @@ freefare-sys = "0.2.0"
 ```
 ## Contributing
 
-I'm brand new to Rust so any help or constructive information would be really appreciated. Thanks in advance!
+If you've found a bug or have an idea, feel free to open an Issue. If you've got a fix or feature ready, open a PR. Thanks!
 
 ## License
 
