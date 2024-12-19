@@ -1,15 +1,16 @@
 [package]
 name = "freefare-sys"
-version = "0.2.0"
-authors = ["Daniel Griffin <mail@danielgriffin.me>"]
+version = "0.2.1"
+authors = ["Daniel Griffin <mail@dsgriffin.com"]
 description = "FFI bindings for the libfreefare library"
 documentation = "https://github.com/dsgriffin/freefare-sys"
 homepage = "https://github.com/dsgriffin/freefare-sys"
 repository = "https://github.com/dsgriffin/freefare-sys"
 readme = "README.md"
-keywords = ["device", "communication", "nfc"]
+keywords = ["device", "communication", "nfc", "libnfc", "libfreefare"]
 license = "MIT"
 
 [dependencies]
 libc = "0.2.0"
 nfc-sys = "0.1.5"
+
