@@ -31,9 +31,9 @@ If the two libraries above are not installed in the standard Homebrew or APT loc
 
 See `build.rs` for more details on how it works if needed.
 
-## Add it to your Cargo.toml
+## Usage
 
-Be sure to include `libc` too. 
+Add both `libc` and `freefare-sys` as dependencies in your `Cargo.toml`. 
 
 ```toml
 [dependencies]
@@ -41,7 +41,7 @@ libc = "0.2.0"
 freefare-sys = "0.2.1"
 ```
 
-## Example Usage
+## Example
 
 Note: this example requires both the `freefare_sys` and `nfc_sys` crates.
 
