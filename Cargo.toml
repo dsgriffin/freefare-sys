@@ -1,16 +1,21 @@
 [package]
 name = "freefare-sys"
-version = "0.2.1"
+version = "1.0.0"
 authors = ["Daniel Griffin <mail@dsgriffin.com"]
-description = "FFI bindings for the libfreefare library"
-documentation = "https://github.com/dsgriffin/freefare-sys"
+description = "Raw FFI bindings to the public libfreefare C API"
+documentation = "https://docs.rs/freefare-sys"
 homepage = "https://github.com/dsgriffin/freefare-sys"
 repository = "https://github.com/dsgriffin/freefare-sys"
 readme = "README.md"
-keywords = ["device", "communication", "nfc", "libnfc", "libfreefare"]
+keywords = ["ffi", "nfc", "libfreefare", "mifare", "desfire"]
+categories = ["external-ffi-bindings", "hardware-support"]
 license = "MIT"
+edition = "2018"
+links = "freefare"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-libc = "0.2.0"
-nfc-sys = "0.1.5"
-
+libc = "0.2"
+nfc-sys = "1.0.0"

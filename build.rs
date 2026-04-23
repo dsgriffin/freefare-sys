@@ -1,50 +1,56 @@
 use std::env;
 use std::path::Path;
 
-/// Links both libfreefare & libnfc
-/// 
-/// Allow custom paths at LIBFREEFARE_PATH and LIBNFC_PATH if preferred
-/// Assume default Homebrew installation location on Mac OS; can be overriden as mentioned above
-/// Verify paths exist before linking
-///
 fn main() {
-    let libfreefare_path = env::var("LIBFREEFARE_PATH").unwrap_or_else(|_| {
-        if cfg!(target_os = "macos") {
-            "/opt/homebrew/opt/libfreefare/lib".to_string()
-        } else if cfg!(target_os = "linux") {
-            "/usr/lib".to_string()
-        } else {
-            panic!("Unsupported platform. Please set LIBFREEFARE_PATH.");
-        }
-    });
+    println!("cargo:rerun-if-env-changed=LIBFREEFARE_LIB_DIR");
+    println!("cargo:rerun-if-env-changed=LIBFREEFARE_PATH");
 
-    if !Path::new(&libfreefare_path).exists() {
-        panic!(
-            "Could not find libfreefare at '{}'. Please install libfreefare or set LIBFREEFARE_PATH.",
-            libfreefare_path
+    link_library(
+        "freefare",
+        &[
+            env::var_os("LIBFREEFARE_LIB_DIR"),
+            env::var_os("LIBFREEFARE_PATH"),
+            if cfg!(target_os = "macos") {
+                Some("/opt/homebrew/opt/libfreefare/lib".into())
+            } else {
+                None
+            },
+            if cfg!(target_os = "macos") {
+                Some("/usr/local/opt/libfreefare/lib".into())
+            } else {
+                None
+            },
+            if cfg!(target_os = "linux") {
+                Some("/usr/lib".into())
+            } else {
+                None
+            },
+            if cfg!(target_os = "linux") {
+                Some("/usr/local/lib".into())
+            } else {
+                None
+            },
+        ],
+    );
+}
+
+fn link_library(name: &str, candidates: &[Option<std::ffi::OsString>]) {
+    let mut found_search_path = false;
+
+    for candidate in candidates.iter().flatten() {
+        let path = Path::new(candidate);
+        if path.exists() {
+            println!("cargo:rustc-link-search=native={}", path.display());
+            found_search_path = true;
+            break;
+        }
+    }
+
+    if !found_search_path {
+        println!(
+            "cargo:warning=No explicit search path found for lib{name}; relying on the platform linker"
         );
     }
 
-    println!("cargo:rustc-link-search=native={}", libfreefare_path);
-    println!("cargo:rustc-link-lib=freefare");
-
-    let libnfc_path = env::var("LIBNFC_PATH").unwrap_or_else(|_| {
-        if cfg!(target_os = "macos") {
-            "/opt/homebrew/opt/libnfc/lib".to_string()
-        } else if cfg!(target_os = "linux") {
-            "/usr/lib".to_string()
-        } else {
-            panic!("Unsupported platform. Please set LIBNFC_PATH.");
-        }
-    });
-
-    if !Path::new(&libnfc_path).exists() {
-        panic!(
-            "Could not find libnfc at '{}'. Please install libnfc or set LIBNFC_PATH.",
-            libnfc_path
-        );
-    }
-
-    println!("cargo:rustc-link-search=native={}", libnfc_path);
-    println!("cargo:rustc-link-lib=nfc");
+    println!("cargo:rustc-link-lib={name}");
 }

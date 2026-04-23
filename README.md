@@ -1,134 +1,106 @@
 # freefare-sys
 
 [![Crates.io](https://img.shields.io/crates/v/freefare-sys.svg?maxAge=2592000)](https://crates.io/crates/freefare-sys)
+[![Docs.rs](https://docs.rs/freefare-sys/badge.svg)](https://docs.rs/freefare-sys)
 
-`freefare-sys` provides FFI bindings to [libfreefare](https://github.com/nfc-tools/libfreefare).
+Raw FFI bindings to the public [`libfreefare`](https://github.com/nfc-tools/libfreefare) C API.
 
-Following the `*-sys` package conventions, the `freefare-sys` package does not define higher-level abstractions over the native library.
+This crate intentionally stays low level. It exposes the upstream ABI for use by higher-level Rust wrappers and NFC tooling, and does not add safe abstractions over tag access, authentication, or memory management.
 
-## Requirements
+## What changed in `1.0.0`
 
-You need to install `libfreefare` and `libnfc` before using this crate.
+Version `1.0.0` is a breaking cleanup release:
 
-### MacOS + Homebrew
+- The binding surface now tracks the public `freefare.h` API instead of exposing generator artifacts and non-header symbols.
+- Opaque native types such as `MifareTag`, `MifareDESFireKey`, `Mad`, and `MifareDESFireAID` are no longer represented as fake Rust structs with internals.
+- Old `Struct_*` and `Enum_*` bindgen names were replaced with stable Rust-facing FFI names.
+- Unsound `Default` implementations based on `mem::zeroed()` were removed.
+- Modern Rust FFI types are used throughout (`c_char`, `c_int`, `c_void`, `u8`, `u16`, `u32`, `usize`, `isize`).
+- The crate now ships smoke tests for layout assumptions and native linking.
+
+## Native dependencies
+
+You need both `libfreefare` and `libnfc` installed on the system.
+
+### macOS with Homebrew
 
 ```bash
 brew install libfreefare libnfc
 ```
 
-### Ubuntu + APT
+### Debian or Ubuntu
 
 ```bash
 sudo apt install libfreefare-dev libnfc-dev
 ```
 
-### Custom Paths
+## Linking
 
-If the two libraries above are not installed in the standard Homebrew or APT locations, you can override the following environment variables:
+`build.rs` links against `freefare`. The `nfc-sys` dependency links `libnfc`.
 
-* **LIBFREEFARE_PATH**: Path to libfreefare (e.g. **/path/to/libfreefare/lib**).
-* **LIBNFC_PATH**: Path to libnfc (e.g. **/path/to/libnfc/lib**).
+By default it checks common Homebrew and Linux library directories for `libfreefare`. If your `libfreefare` installation lives elsewhere, set either the preferred `LIBFREEFARE_LIB_DIR` variable or the legacy `LIBFREEFARE_PATH` variable:
 
-See `build.rs` for more details on how it works if needed.
+```bash
+export LIBFREEFARE_LIB_DIR=/custom/prefix/lib
+```
 
 ## Usage
 
-Add both `libc` and `freefare-sys` as dependencies in your `Cargo.toml`. 
-
 ```toml
 [dependencies]
-libc = "0.2.0"
-freefare-sys = "0.2.1"
+freefare-sys = "1"
+libc = "0.2"
+nfc-sys = "1"
 ```
 
 ## Example
 
-Note: this example requires both the `freefare_sys` and `nfc_sys` crates.
-
-```rust
-extern crate nfc_sys;
-extern crate freefare_sys;
-
+```rust,no_run
 use std::ffi::CStr;
 use std::ptr;
 
 fn main() {
     unsafe {
-        // Initialize NFC context
         let mut context: *mut nfc_sys::nfc_context = ptr::null_mut();
         nfc_sys::nfc_init(&mut context);
+        assert!(!context.is_null());
 
-        if context.is_null() {
-            eprintln!("Failed to initialize NFC context.");
-            return;
-        }
-        println!("NFC context initialized.");
-
-        // Open the NFC device
         let device = nfc_sys::nfc_open(context, ptr::null());
         if device.is_null() {
-            eprintln!("Failed to open NFC device.");
             nfc_sys::nfc_exit(context);
             return;
         }
-        println!("NFC device opened.");
 
-        // Get the list of Freefare tags
         let tags = freefare_sys::freefare_get_tags(device);
+        if !tags.is_null() && !(*tags).is_null() {
+            let tag = *tags;
+            let uid = freefare_sys::freefare_get_tag_uid(tag);
 
-        if tags.is_null() {
-            eprintln!("No Freefare tags found.");
-        } else {
-            let mut tag_ptr = tags;
-
-            // Iterate through the array of tag pointers
-            while !(*tag_ptr).is_null() {
-                let tag = *tag_ptr;
-
-                // Get and print the tag UID
-                let uid = freefare_sys::freefare_get_tag_uid(tag);
-                if !uid.is_null() {
-                    let uid_str = CStr::from_ptr(uid).to_string_lossy();
-                    println!("Found tag with UID: {}", uid_str);
-
-                     // Free the UID string
-                    freefare_sys::freefare_free_tag(uid as *mut _);
-                }
-
-                // Get and print the tag type
-                let tag_type = freefare_sys::freefare_get_tag_type(tag);
-                match tag_type {
-                    freefare_sys::Enum_freefare_tag_type::MIFARE_CLASSIC_1K => {
-                        println!("Tag type: MIFARE Classic 1K");
-                    }
-                    freefare_sys::Enum_freefare_tag_type::MIFARE_CLASSIC_4K => {
-                        println!("Tag type: MIFARE Classic 4K");
-                    }
-                    freefare_sys::Enum_freefare_tag_type::MIFARE_ULTRALIGHT => {
-                        println!("Tag type: MIFARE Ultralight");
-                    }
-                    _ => println!("Unknown tag type"),
-                }
-
-                // Move to the next tag in the array
-                tag_ptr = tag_ptr.add(1);
+            if !uid.is_null() {
+                println!("tag uid: {}", CStr::from_ptr(uid).to_string_lossy());
+                libc::free(uid.cast());
             }
+
+            freefare_sys::freefare_free_tags(tags);
         }
 
-        // Clean up the list of tags
-        freefare_sys::freefare_free_tags(tags);
-        println!("Completed Freefare tag scan.");
-
-        // Close NFC device and exit context
         nfc_sys::nfc_close(device);
         nfc_sys::nfc_exit(context);
     }
 }
 ```
 
-## Contributing
+## Safety
 
-If you've found a bug or have an idea, feel free to open an Issue. If you've got a fix or feature ready, open a PR. Thanks!
+This crate exposes raw C bindings. Callers are responsible for:
+
+- Upholding all pointer validity and lifetime requirements from `libfreefare`.
+- Freeing memory returned by the native library with the correct native deallocator.
+- Ensuring linked `libfreefare` and `libnfc` versions are ABI-compatible with the declarations in this crate.
+
+## Versioning
+
+The Rust crate version follows the Rust FFI surface, not the upstream `libfreefare` release number. Breaking binding corrections or symbol removals may require a new major version even when the C library version is unchanged.
 
 ## License
 

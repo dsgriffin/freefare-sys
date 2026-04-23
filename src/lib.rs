@@ -1,216 +1,244 @@
-#![allow(dead_code, non_camel_case_types, non_upper_case_globals, non_snake_case)]
+#![doc = include_str!("../README.md")]
+#![allow(non_camel_case_types, non_upper_case_globals, non_snake_case)]
 
-extern crate libc;
-extern crate nfc_sys;
+use core::ffi::{c_char, c_int, c_void};
+use libc::off_t;
+use nfc_sys::{nfc_device, nfc_iso14443a_info};
 
-use libc::{off_t, size_t, ssize_t};
-
-use nfc_sys::{nfc_device, nfc_target, nfc_iso14443a_info};
-
-#[derive(Copy, Clone)]
-#[repr(u32)]
-pub enum Enum_freefare_tag_type {
-    FELICA = 0,
-    MIFARE_CLASSIC_1K = 1,
-    MIFARE_CLASSIC_4K = 2,
-    MIFARE_DESFIRE = 3,
-    MIFARE_ULTRALIGHT = 4,
-    MIFARE_ULTRALIGHT_C = 5,
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum FreefareTagType {
+    ULTRALIGHT = 0,
+    ULTRALIGHT_C = 1,
+    CLASSIC_1K = 2,
+    CLASSIC_4K = 3,
+    DESFIRE = 4,
 }
-pub enum Struct_freefare_tag {
+
+#[repr(C)]
+pub struct mifare_tag {
+    _private: [u8; 0],
 }
-pub type FreefareTag = *mut Struct_freefare_tag;
-pub type MifareTag = *mut Struct_freefare_tag;
-pub enum Struct_mifare_desfire_key {
+
+pub type MifareTag = *mut mifare_tag;
+pub type FreefareTag = MifareTag;
+
+#[repr(C)]
+pub struct mifare_desfire_key {
+    _private: [u8; 0],
 }
-pub type MifareDESFireKey = *mut Struct_mifare_desfire_key;
+
+pub type MifareDESFireKey = *mut mifare_desfire_key;
+
 pub type MifareUltralightPageNumber = u8;
-pub type MifareUltralightPage = [::std::os::raw::c_uchar; 4usize];
-pub type MifareClassicBlock = [::std::os::raw::c_uchar; 16usize];
+pub type MifareUltralightPage = [u8; 4];
+pub type MifareClassicBlock = [u8; 16];
 pub type MifareClassicSectorNumber = u8;
-pub type MifareClassicBlockNumber = ::std::os::raw::c_uchar;
-#[derive(Copy, Clone)]
-#[repr(u32)]
-pub enum Enum_Unnamed1 {
+pub type MifareClassicBlockNumber = u8;
+pub type MifareClassicKey = [u8; 6];
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum MifareClassicKeyType {
     MFC_KEY_A = 0,
     MFC_KEY_B = 1,
 }
-pub type MifareClassicKeyType = Enum_Unnamed1;
-pub type MifareClassicKey = [::std::os::raw::c_uchar; 6usize];
+
 #[repr(C)]
-#[derive(Copy, Clone)]
-pub struct Struct_mad_aid {
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct MadAid {
     pub application_code: u8,
     pub function_cluster_code: u8,
 }
-impl ::std::default::Default for Struct_mad_aid {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
-    }
-}
-pub type MadAid = Struct_mad_aid;
-pub enum Struct_mad {
-}
-pub type Mad = *mut Struct_mad;
-#[derive(Copy, Clone)]
-#[repr(u32)]
-pub enum Enum_mifare_desfire_file_types {
-    MDFT_STANDARD_DATA_FILE = 0,
-    MDFT_BACKUP_DATA_FILE = 1,
-    MDFT_VALUE_FILE_WITH_BACKUP = 2,
-    MDFT_LINEAR_RECORD_FILE_WITH_BACKUP = 3,
-    MDFT_CYCLIC_RECORD_FILE_WITH_BACKUP = 4,
-}
-pub enum Struct_mifare_desfire_aid {
-}
-pub type MifareDESFireAID = *mut Struct_mifare_desfire_aid;
+
 #[repr(C)]
-#[derive(Copy, Clone)]
-pub struct Struct_mifare_desfire_df {
+pub struct mad {
+    _private: [u8; 0],
+}
+
+pub type Mad = *mut mad;
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum MifareDesfireFileType {
+    MDFT_STANDARD_DATA_FILE = 0x00,
+    MDFT_BACKUP_DATA_FILE = 0x01,
+    MDFT_VALUE_FILE_WITH_BACKUP = 0x02,
+    MDFT_LINEAR_RECORD_FILE_WITH_BACKUP = 0x03,
+    MDFT_CYCLIC_RECORD_FILE_WITH_BACKUP = 0x04,
+}
+
+#[repr(C)]
+pub struct mifare_desfire_aid {
+    _private: [u8; 0],
+}
+
+pub type MifareDESFireAID = *mut mifare_desfire_aid;
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct MifareDESFireDF {
     pub aid: u32,
     pub fid: u16,
-    pub df_name: [u8; 16usize],
-    pub df_name_len: size_t,
+    pub df_name: [u8; 16],
+    pub df_name_len: usize,
 }
-impl ::std::default::Default for Struct_mifare_desfire_df {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
-    }
+
+#[repr(C, packed)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct MifareDESFireVersionComponent {
+    pub vendor_id: u8,
+    pub type_: u8,
+    pub subtype: u8,
+    pub version_major: u8,
+    pub version_minor: u8,
+    pub storage_size: u8,
+    pub protocol: u8,
 }
-pub type MifareDESFireDF = Struct_mifare_desfire_df;
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct Struct_mifare_desfire_version_info {
-    pub hardware: Struct_Unnamed2,
-    pub software: Struct_Unnamed3,
-    pub uid: [u8; 7usize],
-    pub batch_number: [u8; 5usize],
+
+#[repr(C, packed)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct MifareDESFireVersionInfo {
+    pub hardware: MifareDESFireVersionComponent,
+    pub software: MifareDESFireVersionComponent,
+    pub uid: [u8; 7],
+    pub batch_number: [u8; 5],
     pub production_week: u8,
     pub production_year: u8,
 }
-impl ::std::default::Default for Struct_mifare_desfire_version_info {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
-    }
-}
+
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Struct_Unnamed2 {
-    pub vendor_id: u8,
-    pub _type: u8,
-    pub subtype: u8,
-    pub version_major: u8,
-    pub version_minor: u8,
-    pub storage_size: u8,
-    pub protocol: u8,
+pub union MifareDESFireFileSettingsData {
+    pub standard_file: MifareDESFireStandardFileSettings,
+    pub value_file: MifareDESFireValueFileSettings,
+    pub linear_record_file: MifareDESFireRecordFileSettings,
 }
-impl ::std::default::Default for Struct_Unnamed2 {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
-    }
-}
+
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Struct_Unnamed3 {
-    pub vendor_id: u8,
-    pub _type: u8,
-    pub subtype: u8,
-    pub version_major: u8,
-    pub version_minor: u8,
-    pub storage_size: u8,
-    pub protocol: u8,
-}
-impl ::std::default::Default for Struct_Unnamed3 {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
-    }
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct Struct_mifare_desfire_file_settings {
+pub struct MifareDESFireFileSettings {
     pub file_type: u8,
     pub communication_settings: u8,
     pub access_rights: u16,
-    pub settings: Union_Unnamed4,
+    pub settings: MifareDESFireFileSettingsData,
 }
-impl ::std::default::Default for Struct_mifare_desfire_file_settings {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
-    }
-}
+
 #[repr(C)]
-#[derive(Copy, Clone)]
-pub struct Union_Unnamed4 {
-    pub _bindgen_data_: [u32; 4usize],
-}
-impl Union_Unnamed4 {
-    pub unsafe fn standard_file(&mut self) -> *mut Struct_Unnamed5 {
-        let raw: *mut u8 = ::std::mem::transmute(&self._bindgen_data_);
-        ::std::mem::transmute(raw.offset(0))
-    }
-    pub unsafe fn value_file(&mut self) -> *mut Struct_Unnamed6 {
-        let raw: *mut u8 = ::std::mem::transmute(&self._bindgen_data_);
-        ::std::mem::transmute(raw.offset(0))
-    }
-    pub unsafe fn linear_record_file(&mut self) -> *mut Struct_Unnamed7 {
-        let raw: *mut u8 = ::std::mem::transmute(&self._bindgen_data_);
-        ::std::mem::transmute(raw.offset(0))
-    }
-}
-impl ::std::default::Default for Union_Unnamed4 {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
-    }
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct Struct_Unnamed5 {
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct MifareDESFireStandardFileSettings {
     pub file_size: u32,
 }
-impl ::std::default::Default for Struct_Unnamed5 {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
-    }
-}
+
 #[repr(C)]
-#[derive(Copy, Clone)]
-pub struct Struct_Unnamed6 {
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct MifareDESFireValueFileSettings {
     pub lower_limit: i32,
     pub upper_limit: i32,
     pub limited_credit_value: i32,
     pub limited_credit_enabled: u8,
 }
-impl ::std::default::Default for Struct_Unnamed6 {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
-    }
-}
+
 #[repr(C)]
-#[derive(Copy, Clone)]
-pub struct Struct_Unnamed7 {
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct MifareDESFireRecordFileSettings {
     pub record_size: u32,
     pub max_number_of_records: u32,
     pub current_number_of_records: u32,
 }
-impl ::std::default::Default for Struct_Unnamed7 {
-    fn default() -> Self {
-        unsafe { ::std::mem::zeroed() }
-    }
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct ntag21x_key {
-    _unused: [u8; 0],
-}
-pub type NTAG21xKey = *mut ntag21x_key;
 
-pub const ntag_tag_subtype_NTAG_213: ntag_tag_subtype = 0;
-pub const ntag_tag_subtype_NTAG_215: ntag_tag_subtype = 1;
-pub const ntag_tag_subtype_NTAG_216: ntag_tag_subtype = 2;
-pub type ntag_tag_subtype = u32;
+pub const C_000: u32 = 0;
+pub const C_001: u32 = 1;
+pub const C_010: u32 = 2;
+pub const C_011: u32 = 3;
+pub const C_100: u32 = 4;
+pub const C_101: u32 = 5;
+pub const C_110: u32 = 6;
+pub const C_111: u32 = 7;
+pub const C_DEFAULT: u32 = 255;
 
-#[link(name = "freefare", kind = "dylib")]
-extern "C" {
+pub const MCAB_R: u32 = 0x8;
+pub const MCAB_W: u32 = 0x4;
+pub const MCAB_D: u32 = 0x2;
+pub const MCAB_I: u32 = 0x1;
+
+pub const MCAB_READ_KEYA: u32 = 0x400;
+pub const MCAB_WRITE_KEYA: u32 = 0x100;
+pub const MCAB_READ_ACCESS_BITS: u32 = 0x040;
+pub const MCAB_WRITE_ACCESS_BITS: u32 = 0x010;
+pub const MCAB_READ_KEYB: u32 = 0x004;
+pub const MCAB_WRITE_KEYB: u32 = 0x001;
+
+pub const MDCM_PLAIN: u32 = 0x00;
+pub const MDCM_MACED: u32 = 0x01;
+pub const MDCM_ENCIPHERED: u32 = 0x03;
+
+pub const APPLICATION_CRYPTO_DES: u32 = 0x00;
+pub const APPLICATION_CRYPTO_3K3DES: u32 = 0x40;
+pub const APPLICATION_CRYPTO_AES: u32 = 0x80;
+
+pub const MDAR_KEY0: u16 = 0x0;
+pub const MDAR_KEY1: u16 = 0x1;
+pub const MDAR_KEY2: u16 = 0x2;
+pub const MDAR_KEY3: u16 = 0x3;
+pub const MDAR_KEY4: u16 = 0x4;
+pub const MDAR_KEY5: u16 = 0x5;
+pub const MDAR_KEY6: u16 = 0x6;
+pub const MDAR_KEY7: u16 = 0x7;
+pub const MDAR_KEY8: u16 = 0x8;
+pub const MDAR_KEY9: u16 = 0x9;
+pub const MDAR_KEY10: u16 = 0xa;
+pub const MDAR_KEY11: u16 = 0xb;
+pub const MDAR_KEY12: u16 = 0xc;
+pub const MDAR_KEY13: u16 = 0xd;
+pub const MDAR_FREE: u16 = 0xE;
+pub const MDAR_DENY: u16 = 0xF;
+
+pub const OPERATION_OK: u8 = 0x00;
+pub const NO_CHANGES: u8 = 0x0C;
+pub const OUT_OF_EEPROM_ERROR: u8 = 0x0E;
+pub const ILLEGAL_COMMAND_CODE: u8 = 0x1C;
+pub const INTEGRITY_ERROR: u8 = 0x1E;
+pub const NO_SUCH_KEY: u8 = 0x40;
+pub const LENGTH_ERROR: u8 = 0x7E;
+pub const PERMISSION_ERROR: u8 = 0x9D;
+pub const PARAMETER_ERROR: u8 = 0x9E;
+pub const APPLICATION_NOT_FOUND: u8 = 0xA0;
+pub const APPL_INTEGRITY_ERROR: u8 = 0xA1;
+pub const AUTHENTICATION_ERROR: u8 = 0xAE;
+pub const ADDITIONAL_FRAME: u8 = 0xAF;
+pub const BOUNDARY_ERROR: u8 = 0xBE;
+pub const PICC_INTEGRITY_ERROR: u8 = 0xC1;
+pub const COMMAND_ABORTED: u8 = 0xCA;
+pub const PICC_DISABLED_ERROR: u8 = 0xCD;
+pub const COUNT_ERROR: u8 = 0xCE;
+pub const DUPLICATE_ERROR: u8 = 0xDE;
+pub const EEPROM_ERROR: u8 = 0xEE;
+pub const FILE_NOT_FOUND: u8 = 0xF0;
+pub const FILE_INTEGRITY_ERROR: u8 = 0xF1;
+pub const CRYPTO_ERROR: u8 = 0x01;
+
+pub const fn mdar(read: u16, write: u16, read_write: u16, change_access_rights: u16) -> u16 {
+    (read << 12) | (write << 8) | (read_write << 4) | change_access_rights
+}
+
+pub const fn mdar_read(access_rights: u16) -> u16 {
+    (access_rights >> 12) & 0x0f
+}
+
+pub const fn mdar_write(access_rights: u16) -> u16 {
+    (access_rights >> 8) & 0x0f
+}
+
+pub const fn mdar_read_write(access_rights: u16) -> u16 {
+    (access_rights >> 4) & 0x0f
+}
+
+pub const fn mdar_change_ar(access_rights: u16) -> u16 {
+    access_rights & 0x0f
+}
+
+unsafe extern "C" {
     pub static mifare_classic_nfcforum_public_key_a: MifareClassicKey;
     pub static mad_public_key_a: MifareClassicKey;
     pub static mad_free_aid: MadAid;
@@ -219,152 +247,93 @@ extern "C" {
     pub static mad_card_holder_aid: MadAid;
     pub static mad_not_applicable_aid: MadAid;
     pub static mad_nfcforum_aid: MadAid;
-}
-#[link(name = "freefare", kind = "dylib")]
-extern "C" {
-    pub fn freefare_get_tags(device: *mut nfc_device) -> *mut FreefareTag;
-    pub fn freefare_tag_new(device: *mut nfc_device, target: nfc_target) -> FreefareTag;
-    pub fn freefare_get_tag_type(tag: FreefareTag) -> Enum_freefare_tag_type;
-    pub fn freefare_get_tag_friendly_name(tag: FreefareTag) -> *const ::std::os::raw::c_char;
-    pub fn freefare_get_tag_uid(tag: MifareTag) -> *mut ::std::os::raw::c_char;
-    pub fn freefare_free_tag(tag: FreefareTag);
-    pub fn freefare_free_tags(tags: *mut FreefareTag);
-    pub fn freefare_selected_tag_is_present(device: *mut nfc_device) -> u8;
-    pub fn freefare_strerror(tag: FreefareTag) -> *const ::std::os::raw::c_char;
-    pub fn freefare_strerror_r(
-        tag: FreefareTag,
-        buffer: *mut ::std::os::raw::c_char,
-        len: size_t,
-    ) -> ::std::os::raw::c_int;
-    pub fn freefare_perror(tag: FreefareTag, string: *const ::std::os::raw::c_char);
-    pub fn felica_taste(device: *mut nfc_device, target: nfc_target) -> u8;
-    pub fn felica_tag_new(device: *mut nfc_device, target: nfc_target) -> FreefareTag;
-    pub fn felica_tag_free(tag: FreefareTag);
-    pub fn felica_read(
-        tag: FreefareTag,
-        service: u16,
-        block: u8,
-        data: *mut u8,
-        length: size_t,
-    ) -> ssize_t;
-    pub fn felica_read_ex(
-        tag: FreefareTag,
-        service: u16,
-        block_count: u8,
-        blocks: *mut u8,
-        data: *mut u8,
-        length: size_t,
-    ) -> ssize_t;
-    pub fn felica_write(
-        tag: FreefareTag,
-        service: u16,
-        block: u8,
-        data: *mut u8,
-        length: size_t,
-    ) -> ssize_t;
-    pub fn felica_write_ex(
-        tag: FreefareTag,
-        service: u16,
-        block_count: u8,
-        blocks: *mut u8,
-        data: *mut u8,
-        length: size_t,
-    ) -> ssize_t;
-    pub fn mifare_ultralight_taste(device: *mut nfc_device, target: nfc_target) -> u8;
-    pub fn mifare_ultralightc_taste(device: *mut nfc_device, target: nfc_target) -> u8;
-    pub fn mifare_ultralight_tag_new(device: *mut nfc_device, target: nfc_target) -> FreefareTag;
-    pub fn mifare_ultralightc_tag_new(device: *mut nfc_device, target: nfc_target) -> FreefareTag;
-    pub fn mifare_ultralight_tag_free(tag: FreefareTag);
-    pub fn mifare_ultralightc_tag_free(tag: FreefareTag);
-    pub fn mifare_ultralight_connect(tag: FreefareTag) -> ::std::os::raw::c_int;
-    pub fn mifare_ultralight_disconnect(tag: FreefareTag) -> ::std::os::raw::c_int;
+
+    pub fn freefare_get_tags(device: *mut nfc_device) -> *mut MifareTag;
+    pub fn freefare_tag_new(device: *mut nfc_device, nai: nfc_iso14443a_info) -> MifareTag;
+    pub fn freefare_get_tag_type(tag: MifareTag) -> FreefareTagType;
+    pub fn freefare_get_tag_friendly_name(tag: MifareTag) -> *const c_char;
+    pub fn freefare_get_tag_uid(tag: MifareTag) -> *mut c_char;
+    pub fn freefare_free_tag(tag: MifareTag);
+    pub fn freefare_free_tags(tags: *mut MifareTag);
+
+    pub fn freefare_strerror(tag: MifareTag) -> *const c_char;
+    pub fn freefare_strerror_r(tag: MifareTag, buffer: *mut c_char, len: usize) -> c_int;
+    pub fn freefare_perror(tag: MifareTag, string: *const c_char);
+
+    pub fn mifare_ultralight_connect(tag: MifareTag) -> c_int;
+    pub fn mifare_ultralight_disconnect(tag: MifareTag) -> c_int;
     pub fn mifare_ultralight_read(
-        tag: FreefareTag,
+        tag: MifareTag,
         page: MifareUltralightPageNumber,
         data: *mut MifareUltralightPage,
-    ) -> ::std::os::raw::c_int;
-    
+    ) -> c_int;
     pub fn mifare_ultralight_write(
-        tag: FreefareTag,
+        tag: MifareTag,
         page: MifareUltralightPageNumber,
         data: *const MifareUltralightPage,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_ultralightc_authenticate(
-        tag: FreefareTag,
-        key: MifareDESFireKey,
-    ) -> ::std::os::raw::c_int;
-    pub fn is_mifare_ultralight(tag: FreefareTag) -> u8;
-    pub fn is_mifare_ultralightc(tag: FreefareTag) -> u8;
-    pub fn is_mifare_ultralightc_on_reader(device: *mut nfc_device, nai: nfc_iso14443a_info) -> u8;
-    pub fn mifare_classic1k_taste(device: *mut nfc_device, target: nfc_target) -> u8;
-    pub fn mifare_classic4k_taste(device: *mut nfc_device, target: nfc_target) -> u8;
-    pub fn mifare_classic1k_tag_new(device: *mut nfc_device, target: nfc_target) -> FreefareTag;
-    pub fn mifare_classic4k_tag_new(device: *mut nfc_device, target: nfc_target) -> FreefareTag;
-    pub fn mifare_classic_tag_free(tag: FreefareTag);
-    pub fn mifare_classic_connect(tag: FreefareTag) -> ::std::os::raw::c_int;
-    pub fn mifare_classic_disconnect(tag: FreefareTag) -> ::std::os::raw::c_int;
+    ) -> c_int;
+    pub fn mifare_ultralightc_authenticate(tag: MifareTag, key: MifareDESFireKey) -> c_int;
+    pub fn is_mifare_ultralightc_on_reader(
+        device: *mut nfc_device,
+        nai: nfc_iso14443a_info,
+    ) -> bool;
+
+    pub fn mifare_classic_connect(tag: MifareTag) -> c_int;
+    pub fn mifare_classic_disconnect(tag: MifareTag) -> c_int;
     pub fn mifare_classic_authenticate(
-        tag: FreefareTag,
+        tag: MifareTag,
         block: MifareClassicBlockNumber,
         key: *const MifareClassicKey,
         key_type: MifareClassicKeyType,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_classic_read(
-        tag: FreefareTag,
+        tag: MifareTag,
         block: MifareClassicBlockNumber,
         data: *mut MifareClassicBlock,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_classic_init_value(
-        tag: FreefareTag,
+        tag: MifareTag,
         block: MifareClassicBlockNumber,
         value: i32,
         adr: MifareClassicBlockNumber,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_classic_read_value(
-        tag: FreefareTag,
+        tag: MifareTag,
         block: MifareClassicBlockNumber,
         value: *mut i32,
         adr: *mut MifareClassicBlockNumber,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_classic_write(
-        tag: FreefareTag,
+        tag: MifareTag,
         block: MifareClassicBlockNumber,
         data: *const MifareClassicBlock,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_classic_increment(
-        tag: FreefareTag,
+        tag: MifareTag,
         block: MifareClassicBlockNumber,
         amount: u32,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_classic_decrement(
-        tag: FreefareTag,
+        tag: MifareTag,
         block: MifareClassicBlockNumber,
         amount: u32,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_classic_restore(
-        tag: FreefareTag,
-        block: MifareClassicBlockNumber,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_classic_transfer(
-        tag: FreefareTag,
-        block: MifareClassicBlockNumber,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
+    pub fn mifare_classic_restore(tag: MifareTag, block: MifareClassicBlockNumber) -> c_int;
+    pub fn mifare_classic_transfer(tag: MifareTag, block: MifareClassicBlockNumber) -> c_int;
     pub fn mifare_classic_get_trailer_block_permission(
-        tag: FreefareTag,
+        tag: MifareTag,
         block: MifareClassicBlockNumber,
         permission: u16,
         key_type: MifareClassicKeyType,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_classic_get_data_block_permission(
-        tag: FreefareTag,
+        tag: MifareTag,
         block: MifareClassicBlockNumber,
-        permission: ::std::os::raw::c_uchar,
+        permission: u8,
         key_type: MifareClassicKeyType,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_classic_format_sector(
-        tag: FreefareTag,
-        sector: MifareClassicSectorNumber,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
+    pub fn mifare_classic_format_sector(tag: MifareTag, sector: MifareClassicSectorNumber)
+        -> c_int;
     pub fn mifare_classic_trailer_block(
         block: *mut MifareClassicBlock,
         key_a: *const MifareClassicKey,
@@ -381,247 +350,213 @@ extern "C" {
     pub fn mifare_classic_sector_first_block(
         sector: MifareClassicSectorNumber,
     ) -> MifareClassicBlockNumber;
-    pub fn mifare_classic_sector_block_count(sector: MifareClassicSectorNumber) -> size_t;
+    pub fn mifare_classic_sector_block_count(sector: MifareClassicSectorNumber) -> usize;
     pub fn mifare_classic_sector_last_block(
         sector: MifareClassicSectorNumber,
     ) -> MifareClassicBlockNumber;
+
     pub fn mad_new(version: u8) -> Mad;
-    pub fn mad_read(tag: FreefareTag) -> Mad;
+    pub fn mad_read(tag: MifareTag) -> Mad;
     pub fn mad_write(
-        tag: FreefareTag,
+        tag: MifareTag,
         mad: Mad,
         key_b_sector_00: *const MifareClassicKey,
         key_b_sector_10: *const MifareClassicKey,
-    ) -> ::std::os::raw::c_int;
-    pub fn mad_get_version(mad: Mad) -> ::std::os::raw::c_int;
+    ) -> c_int;
+    pub fn mad_get_version(mad: Mad) -> c_int;
     pub fn mad_set_version(mad: Mad, version: u8);
     pub fn mad_get_card_publisher_sector(mad: Mad) -> MifareClassicSectorNumber;
-    pub fn mad_set_card_publisher_sector(
-        mad: Mad,
-        cps: MifareClassicSectorNumber,
-    ) -> ::std::os::raw::c_int;
-    pub fn mad_get_aid(
-        mad: Mad,
-        sector: MifareClassicSectorNumber,
-        aid: *mut MadAid,
-    ) -> ::std::os::raw::c_int;
-    pub fn mad_set_aid(
-        mad: Mad,
-        sector: MifareClassicSectorNumber,
-        aid: MadAid,
-    ) -> ::std::os::raw::c_int;
-    pub fn mad_sector_reserved(sector: MifareClassicSectorNumber) -> u8;
+    pub fn mad_set_card_publisher_sector(mad: Mad, cps: MifareClassicSectorNumber) -> c_int;
+    pub fn mad_get_aid(mad: Mad, sector: MifareClassicSectorNumber, aid: *mut MadAid) -> c_int;
+    pub fn mad_set_aid(mad: Mad, sector: MifareClassicSectorNumber, aid: MadAid) -> c_int;
+    pub fn mad_sector_reserved(sector: MifareClassicSectorNumber) -> bool;
     pub fn mad_free(mad: Mad);
+
     pub fn mifare_application_alloc(
         mad: Mad,
         aid: MadAid,
-        size: size_t,
+        size: usize,
     ) -> *mut MifareClassicSectorNumber;
     pub fn mifare_application_read(
-        tag: FreefareTag,
+        tag: MifareTag,
         mad: Mad,
         aid: MadAid,
-        buf: *mut ::std::os::raw::c_void,
-        nbytes: size_t,
+        buf: *mut c_void,
+        nbytes: usize,
         key: *const MifareClassicKey,
         key_type: MifareClassicKeyType,
-    ) -> ssize_t;
+    ) -> isize;
     pub fn mifare_application_write(
-        tag: FreefareTag,
+        tag: MifareTag,
         mad: Mad,
         aid: MadAid,
-        buf: *const ::std::os::raw::c_void,
-        nbytes: size_t,
+        buf: *const c_void,
+        nbytes: usize,
         key: *const MifareClassicKey,
         key_type: MifareClassicKeyType,
-    ) -> ssize_t;
-    pub fn mifare_application_free(mad: Mad, aid: MadAid) -> ::std::os::raw::c_int;
+    ) -> isize;
+    pub fn mifare_application_free(mad: Mad, aid: MadAid);
     pub fn mifare_application_find(mad: Mad, aid: MadAid) -> *mut MifareClassicSectorNumber;
-    pub fn mifare_desfire_taste(device: *mut nfc_device, target: nfc_target) -> u8;
+
     pub fn mifare_desfire_aid_new(aid: u32) -> MifareDESFireAID;
     pub fn mifare_desfire_aid_new_with_mad_aid(mad_aid: MadAid, n: u8) -> MifareDESFireAID;
     pub fn mifare_desfire_aid_get_aid(aid: MifareDESFireAID) -> u32;
-    pub fn mifare_desfire_last_pcd_error(tag: FreefareTag) -> u8;
-    pub fn mifare_desfire_last_picc_error(tag: FreefareTag) -> u8;
-    pub fn mifare_desfire_tag_new(device: *mut nfc_device, target: nfc_target) -> FreefareTag;
-    pub fn mifare_desfire_tag_free(tags: FreefareTag);
-    pub fn mifare_desfire_connect(tag: FreefareTag) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_disconnect(tag: FreefareTag) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_authenticate(
-        tag: FreefareTag,
-        key_no: u8,
-        key: MifareDESFireKey,
-    ) -> ::std::os::raw::c_int;
+    pub fn mifare_desfire_last_pcd_error(tag: MifareTag) -> u8;
+    pub fn mifare_desfire_last_picc_error(tag: MifareTag) -> u8;
+    pub fn mifare_desfire_connect(tag: MifareTag) -> c_int;
+    pub fn mifare_desfire_disconnect(tag: MifareTag) -> c_int;
+    pub fn mifare_desfire_authenticate(tag: MifareTag, key_no: u8, key: MifareDESFireKey) -> c_int;
     pub fn mifare_desfire_authenticate_iso(
-        tag: FreefareTag,
+        tag: MifareTag,
         key_no: u8,
         key: MifareDESFireKey,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_authenticate_aes(
-        tag: FreefareTag,
+        tag: MifareTag,
         key_no: u8,
         key: MifareDESFireKey,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_change_key_settings(
-        tag: FreefareTag,
-        settings: u8,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
+    pub fn mifare_desfire_change_key_settings(tag: MifareTag, settings: u8) -> c_int;
     pub fn mifare_desfire_get_key_settings(
-        tag: FreefareTag,
+        tag: MifareTag,
         settings: *mut u8,
         max_keys: *mut u8,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_change_key(
-        tag: FreefareTag,
+        tag: MifareTag,
         key_no: u8,
         new_key: MifareDESFireKey,
         old_key: MifareDESFireKey,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_get_key_version(
-        tag: FreefareTag,
-        key_no: u8,
-        version: *mut u8,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
+    pub fn mifare_desfire_get_key_version(tag: MifareTag, key_no: u8, version: *mut u8) -> c_int;
     pub fn mifare_desfire_create_application(
-        tag: FreefareTag,
+        tag: MifareTag,
         aid: MifareDESFireAID,
         settings: u8,
         key_no: u8,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_application_3k3des(
-        tag: FreefareTag,
+        tag: MifareTag,
         aid: MifareDESFireAID,
         settings: u8,
         key_no: u8,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_application_aes(
-        tag: FreefareTag,
+        tag: MifareTag,
         aid: MifareDESFireAID,
         settings: u8,
         key_no: u8,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_application_iso(
-        tag: FreefareTag,
+        tag: MifareTag,
         aid: MifareDESFireAID,
         settings: u8,
         key_no: u8,
-        want_iso_file_identifiers: ::std::os::raw::c_int,
+        want_iso_file_identifiers: c_int,
         iso_file_id: u16,
         iso_file_name: *mut u8,
-        iso_file_name_len: size_t,
-    ) -> ::std::os::raw::c_int;
+        iso_file_name_len: usize,
+    ) -> c_int;
     pub fn mifare_desfire_create_application_3k3des_iso(
-        tag: FreefareTag,
+        tag: MifareTag,
         aid: MifareDESFireAID,
         settings: u8,
         key_no: u8,
-        want_iso_file_identifiers: ::std::os::raw::c_int,
+        want_iso_file_identifiers: c_int,
         iso_file_id: u16,
         iso_file_name: *mut u8,
-        iso_file_name_len: size_t,
-    ) -> ::std::os::raw::c_int;
+        iso_file_name_len: usize,
+    ) -> c_int;
     pub fn mifare_desfire_create_application_aes_iso(
-        tag: FreefareTag,
+        tag: MifareTag,
         aid: MifareDESFireAID,
         settings: u8,
         key_no: u8,
-        want_iso_file_identifiers: ::std::os::raw::c_int,
+        want_iso_file_identifiers: c_int,
         iso_file_id: u16,
         iso_file_name: *mut u8,
-        iso_file_name_len: size_t,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_delete_application(
-        tag: FreefareTag,
-        aid: MifareDESFireAID,
-    ) -> ::std::os::raw::c_int;
+        iso_file_name_len: usize,
+    ) -> c_int;
+    pub fn mifare_desfire_delete_application(tag: MifareTag, aid: MifareDESFireAID) -> c_int;
     pub fn mifare_desfire_get_application_ids(
-        tag: FreefareTag,
+        tag: MifareTag,
         aids: *mut *mut MifareDESFireAID,
-        count: *mut size_t,
-    ) -> ::std::os::raw::c_int;
+        count: *mut usize,
+    ) -> c_int;
     pub fn mifare_desfire_get_df_names(
-        tag: FreefareTag,
+        tag: MifareTag,
         dfs: *mut *mut MifareDESFireDF,
-        count: *mut size_t,
-    ) -> ::std::os::raw::c_int;
+        count: *mut usize,
+    ) -> c_int;
     pub fn mifare_desfire_free_application_ids(aids: *mut MifareDESFireAID);
-    pub fn mifare_desfire_select_application(
-        tag: FreefareTag,
-        aid: MifareDESFireAID,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_format_picc(tag: FreefareTag) -> ::std::os::raw::c_int;
+    pub fn mifare_desfire_select_application(tag: MifareTag, aid: MifareDESFireAID) -> c_int;
+    pub fn mifare_desfire_format_picc(tag: MifareTag) -> c_int;
     pub fn mifare_desfire_get_version(
-        tag: FreefareTag,
-        version_info: *mut Struct_mifare_desfire_version_info,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_free_mem(tag: FreefareTag, size: *mut u32) -> ::std::os::raw::c_int;
+        tag: MifareTag,
+        version_info: *mut MifareDESFireVersionInfo,
+    ) -> c_int;
+    pub fn mifare_desfire_free_mem(tag: MifareTag, size: *mut u32) -> c_int;
     pub fn mifare_desfire_set_configuration(
-        tag: FreefareTag,
-        disable_format: u8,
-        enable_random_uid: u8,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_set_default_key(
-        tag: FreefareTag,
-        key: MifareDESFireKey,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_set_ats(tag: FreefareTag, ats: *mut u8) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_get_card_uid(
-        tag: FreefareTag,
-        uid: *mut *mut ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
+        tag: MifareTag,
+        disable_format: bool,
+        enable_random_uid: bool,
+    ) -> c_int;
+    pub fn mifare_desfire_set_default_key(tag: MifareTag, key: MifareDESFireKey) -> c_int;
+    pub fn mifare_desfire_set_ats(tag: MifareTag, ats: *mut u8) -> c_int;
+    pub fn mifare_desfire_get_card_uid(tag: MifareTag, uid: *mut *mut c_char) -> c_int;
     pub fn mifare_desfire_get_file_ids(
-        tag: FreefareTag,
+        tag: MifareTag,
         files: *mut *mut u8,
-        count: *mut size_t,
-    ) -> ::std::os::raw::c_int;
+        count: *mut usize,
+    ) -> c_int;
     pub fn mifare_desfire_get_iso_file_ids(
-        tag: FreefareTag,
+        tag: MifareTag,
         files: *mut *mut u16,
-        count: *mut size_t,
-    ) -> ::std::os::raw::c_int;
+        count: *mut usize,
+    ) -> c_int;
     pub fn mifare_desfire_get_file_settings(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
-        settings: *mut Struct_mifare_desfire_file_settings,
-    ) -> ::std::os::raw::c_int;
+        settings: *mut MifareDESFireFileSettings,
+    ) -> c_int;
     pub fn mifare_desfire_change_file_settings(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         communication_settings: u8,
         access_rights: u16,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_std_data_file(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         communication_settings: u8,
         access_rights: u16,
         file_size: u32,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_std_data_file_iso(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         communication_settings: u8,
         access_rights: u16,
         file_size: u32,
         iso_file_id: u16,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_backup_data_file(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         communication_settings: u8,
         access_rights: u16,
         file_size: u32,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_backup_data_file_iso(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         communication_settings: u8,
         access_rights: u16,
         file_size: u32,
         iso_file_id: u16,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_value_file(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         communication_settings: u8,
         access_rights: u16,
@@ -629,152 +564,123 @@ extern "C" {
         upper_limit: i32,
         value: i32,
         limited_credit_enable: u8,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_linear_record_file(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         communication_settings: u8,
         access_rights: u16,
         record_size: u32,
         max_number_of_records: u32,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_linear_record_file_iso(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         communication_settings: u8,
         access_rights: u16,
         record_size: u32,
         max_number_of_records: u32,
         iso_file_id: u16,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_cyclic_record_file(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         communication_settings: u8,
         access_rights: u16,
         record_size: u32,
         max_number_of_records: u32,
-    ) -> ::std::os::raw::c_int;
+    ) -> c_int;
     pub fn mifare_desfire_create_cyclic_record_file_iso(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         communication_settings: u8,
         access_rights: u16,
         record_size: u32,
         max_number_of_records: u32,
         iso_file_id: u16,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_delete_file(tag: FreefareTag, file_no: u8) -> ::std::os::raw::c_int;
+    ) -> c_int;
+    pub fn mifare_desfire_delete_file(tag: MifareTag, file_no: u8) -> c_int;
     pub fn mifare_desfire_read_data(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         offset: off_t,
-        length: size_t,
-        data: *mut ::std::os::raw::c_void,
-    ) -> ssize_t;
+        length: usize,
+        data: *mut c_void,
+    ) -> isize;
     pub fn mifare_desfire_read_data_ex(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         offset: off_t,
-        length: size_t,
-        data: *mut ::std::os::raw::c_void,
-        cs: ::std::os::raw::c_int,
-    ) -> ssize_t;
+        length: usize,
+        data: *mut c_void,
+        cs: c_int,
+    ) -> isize;
     pub fn mifare_desfire_write_data(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         offset: off_t,
-        length: size_t,
-        data: *const ::std::os::raw::c_void,
-    ) -> ssize_t;
+        length: usize,
+        data: *const c_void,
+    ) -> isize;
     pub fn mifare_desfire_write_data_ex(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         offset: off_t,
-        length: size_t,
-        data: *const ::std::os::raw::c_void,
-        cs: ::std::os::raw::c_int,
-    ) -> ssize_t;
-    pub fn mifare_desfire_get_value(
-        tag: FreefareTag,
-        file_no: u8,
-        value: *mut i32,
-    ) -> ::std::os::raw::c_int;
+        length: usize,
+        data: *const c_void,
+        cs: c_int,
+    ) -> isize;
+    pub fn mifare_desfire_get_value(tag: MifareTag, file_no: u8, value: *mut i32) -> c_int;
     pub fn mifare_desfire_get_value_ex(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         value: *mut i32,
-        cs: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_credit(
-        tag: FreefareTag,
-        file_no: u8,
-        amount: i32,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_credit_ex(
-        tag: FreefareTag,
-        file_no: u8,
-        amount: i32,
-        cs: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_debit(
-        tag: FreefareTag,
-        file_no: u8,
-        amount: i32,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_debit_ex(
-        tag: FreefareTag,
-        file_no: u8,
-        amount: i32,
-        cs: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_limited_credit(
-        tag: FreefareTag,
-        file_no: u8,
-        amount: i32,
-    ) -> ::std::os::raw::c_int;
+        cs: c_int,
+    ) -> c_int;
+    pub fn mifare_desfire_credit(tag: MifareTag, file_no: u8, amount: i32) -> c_int;
+    pub fn mifare_desfire_credit_ex(tag: MifareTag, file_no: u8, amount: i32, cs: c_int) -> c_int;
+    pub fn mifare_desfire_debit(tag: MifareTag, file_no: u8, amount: i32) -> c_int;
+    pub fn mifare_desfire_debit_ex(tag: MifareTag, file_no: u8, amount: i32, cs: c_int) -> c_int;
+    pub fn mifare_desfire_limited_credit(tag: MifareTag, file_no: u8, amount: i32) -> c_int;
     pub fn mifare_desfire_limited_credit_ex(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         amount: i32,
-        cs: ::std::os::raw::c_int,
-    ) -> ::std::os::raw::c_int;
+        cs: c_int,
+    ) -> c_int;
     pub fn mifare_desfire_write_record(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         offset: off_t,
-        length: size_t,
-        data: *mut ::std::os::raw::c_void,
-    ) -> ssize_t;
+        length: usize,
+        data: *mut c_void,
+    ) -> isize;
     pub fn mifare_desfire_write_record_ex(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         offset: off_t,
-        length: size_t,
-        data: *mut ::std::os::raw::c_void,
-        cs: ::std::os::raw::c_int,
-    ) -> ssize_t;
+        length: usize,
+        data: *mut c_void,
+        cs: c_int,
+    ) -> isize;
     pub fn mifare_desfire_read_records(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         offset: off_t,
-        length: size_t,
-        data: *mut ::std::os::raw::c_void,
-    ) -> ssize_t;
+        length: usize,
+        data: *mut c_void,
+    ) -> isize;
     pub fn mifare_desfire_read_records_ex(
-        tag: FreefareTag,
+        tag: MifareTag,
         file_no: u8,
         offset: off_t,
-        length: size_t,
-        data: *mut ::std::os::raw::c_void,
-        cs: ::std::os::raw::c_int,
-    ) -> ssize_t;
-    pub fn mifare_desfire_clear_record_file(
-        tag: FreefareTag,
-        file_no: u8,
-    ) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_commit_transaction(tag: FreefareTag) -> ::std::os::raw::c_int;
-    pub fn mifare_desfire_abort_transaction(tag: FreefareTag) -> ::std::os::raw::c_int;
+        length: usize,
+        data: *mut c_void,
+        cs: c_int,
+    ) -> isize;
+    pub fn mifare_desfire_clear_record_file(tag: MifareTag, file_no: u8) -> c_int;
+    pub fn mifare_desfire_commit_transaction(tag: MifareTag) -> c_int;
+    pub fn mifare_desfire_abort_transaction(tag: MifareTag) -> c_int;
     pub fn mifare_desfire_des_key_new(value: *mut u8) -> MifareDESFireKey;
     pub fn mifare_desfire_3des_key_new(value: *mut u8) -> MifareDESFireKey;
     pub fn mifare_desfire_des_key_new_with_version(value: *mut u8) -> MifareDESFireKey;
@@ -782,111 +688,46 @@ extern "C" {
     pub fn mifare_desfire_3k3des_key_new(value: *mut u8) -> MifareDESFireKey;
     pub fn mifare_desfire_3k3des_key_new_with_version(value: *mut u8) -> MifareDESFireKey;
     pub fn mifare_desfire_aes_key_new(value: *mut u8) -> MifareDESFireKey;
-    pub fn mifare_desfire_aes_key_new_with_version(
-        value: *mut u8,
-        version: u8,
-    ) -> MifareDESFireKey;
+    pub fn mifare_desfire_aes_key_new_with_version(value: *mut u8, version: u8)
+        -> MifareDESFireKey;
     pub fn mifare_desfire_key_get_version(key: MifareDESFireKey) -> u8;
     pub fn mifare_desfire_key_set_version(key: MifareDESFireKey, version: u8);
     pub fn mifare_desfire_key_free(key: MifareDESFireKey);
-    pub fn tlv_encode(
-        _type: u8,
-        istream: *const u8,
-        isize: u16,
-        osize: *mut size_t,
-    ) -> *mut u8;
-    pub fn tlv_decode(
-        istream: *const u8,
-        _type: *mut u8,
-        size: *mut u16,
-    ) -> *mut u8;
+
+    pub fn tlv_encode(_type: u8, istream: *const u8, isize: u16, osize: *mut usize) -> *mut u8;
+    pub fn tlv_decode(istream: *const u8, _type: *mut u8, size: *mut u16) -> *mut u8;
     pub fn tlv_record_length(
         istream: *const u8,
-        field_length_size: *mut size_t,
-        field_value_size: *mut size_t,
-    ) -> size_t;
+        field_length_size: *mut usize,
+        field_value_size: *mut usize,
+    ) -> usize;
     pub fn tlv_append(a: *mut u8, b: *mut u8) -> *mut u8;
+}
 
-    pub fn ntag21x_taste(device: *mut nfc_device, target: nfc_target) -> bool;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    pub fn ntag21x_tag_new(device: *mut nfc_device, target: nfc_target) -> FreefareTag;
+    #[test]
+    fn packed_and_layout_smoke_tests() {
+        assert_eq!(core::mem::size_of::<MadAid>(), 2);
+        assert_eq!(core::mem::size_of::<MifareDESFireVersionComponent>(), 7);
+        assert_eq!(core::mem::size_of::<MifareDESFireVersionInfo>(), 28);
+        assert_eq!(core::mem::size_of::<MifareDESFireFileSettings>(), 20);
+    }
 
-    pub fn ntag21x_tag_reuse(tag: FreefareTag) -> FreefareTag;
+    #[test]
+    fn access_right_helpers_match_header_macros() {
+        let access_rights = mdar(MDAR_KEY1, MDAR_KEY2, MDAR_FREE, MDAR_DENY);
+        assert_eq!(mdar_read(access_rights), MDAR_KEY1);
+        assert_eq!(mdar_write(access_rights), MDAR_KEY2);
+        assert_eq!(mdar_read_write(access_rights), MDAR_FREE);
+        assert_eq!(mdar_change_ar(access_rights), MDAR_DENY);
+    }
 
-    pub fn ntag21x_key_new(data: *const u8, pack: *const u8) -> NTAG21xKey;
-
-    pub fn ntag21x_key_free(key: NTAG21xKey);
-
-    pub fn ntag21x_tag_free(tag: FreefareTag);
-
-    pub fn ntag21x_connect(tag: FreefareTag) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_disconnect(tag: FreefareTag) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_get_info(tag: FreefareTag) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_get_subtype(tag: FreefareTag) -> ntag_tag_subtype;
-
-    pub fn ntag21x_get_last_page(tag: FreefareTag) -> u8;
-
-    pub fn ntag21x_read_signature(tag: FreefareTag, data: *mut u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_set_pwd(tag: FreefareTag, data: *mut u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_set_pack(tag: FreefareTag, data: *mut u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_set_key(tag: FreefareTag, key: NTAG21xKey) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_set_auth(tag: FreefareTag, byte: u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_get_auth(tag: FreefareTag, byte: *mut u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_access_enable(tag: FreefareTag, byte: u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_access_disable(tag: FreefareTag, byte: u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_get_access(tag: FreefareTag, byte: *mut u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_check_access(
-        tag: FreefareTag,
-        byte: u8,
-        result: *mut bool,
-    ) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_get_authentication_limit(
-        tag: FreefareTag,
-        byte: *mut u8,
-    ) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_set_authentication_limit(tag: FreefareTag, byte: u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_read(tag: FreefareTag, page: u8, data: *mut u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_read4(tag: FreefareTag, page: u8, data: *mut u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_fast_read(
-        tag: FreefareTag,
-        start_page: u8,
-        end_page: u8,
-        data: *mut u8,
-    ) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_fast_read4(tag: FreefareTag, page: u8, data: *mut u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_read_cnt(tag: FreefareTag, data: *mut u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_write(tag: FreefareTag, page: u8, data: *mut u8) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_compatibility_write(
-        tag: FreefareTag,
-        page: u8,
-        data: *mut u8,
-    ) -> ::std::os::raw::c_int;
-
-    pub fn ntag21x_authenticate(tag: FreefareTag, key: NTAG21xKey) -> ::std::os::raw::c_int;
-
-    pub fn is_ntag21x(tag: FreefareTag) -> bool;
-
-    pub fn ntag21x_is_auth_supported(device: *mut nfc_device, nai: nfc_iso14443a_info) -> bool;
-
+    #[test]
+    fn links_against_system_libraries() {
+        let version = unsafe { nfc_sys::nfc_version() };
+        assert!(!version.is_null());
+    }
 }
